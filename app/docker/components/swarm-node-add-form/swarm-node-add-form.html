@@ -1,0 +1,62 @@
+  <div class="modal-content">
+    <div class="modal-header">
+      <button type="button" class="close" ng-click="cancel()" aria-hidden="true">&times;</button>
+      <h4 class="modal-title">添加节点</h4>
+    </div>
+    <div class="modal-body">
+      <form class="form-horizontal">
+        <div class="form-group">
+          <label for="stack_name" class="col-sm-3 control-label">集群名称</label>
+          <div class="col-sm-9">
+            <input type="text" class="form-control" id="stack_name" ng-model="node.stack_name" placeholder="default" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="node_ip" class="col-sm-3 control-label">节点IP</label>
+          <div class="col-sm-9">
+            <input type="text" class="form-control" id="node_ip" ng-model="node.node_ip" placeholder="192.168.1.100" required>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="node_user" class="col-sm-3 control-label">用户名</label>
+          <div class="col-sm-9">
+            <input type="text" class="form-control" id="node_user" ng-model="node.node_user" placeholder="root" required>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="node_password" class="col-sm-3 control-label">密码</label>
+          <div class="col-sm-9">
+            <input type="password" class="form-control" id="node_password" ng-model="node.node_password" required>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="node_port" class="col-sm-3 control-label">SSH端口</label>
+          <div class="col-sm-9">
+            <input type="number" class="form-control" id="node_port" ng-model="node.node_port" placeholder="22" required>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="node_role" class="col-sm-3 control-label">角色</label>
+          <div class="col-sm-9">
+            <select class="form-control" id="node_role" ng-model="formValues.NodeRole" required>
+              <option value="manager">Manager</option>
+              <option value="worker">Worker</option>
+            </select>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-default" ng-click="cancel()" ng-disabled="loading">取消</button>
+      <button type="button" class="btn btn-primary" ng-click="add()" ng-disabled="loading">
+        <span ng-if="!loading">添加</span>
+        <span ng-if="loading">
+          <i class="fa fa-spinner fa-spin"></i> 正在添加节点，请稍候...
+        </span>
+      </button>
+    </div>
+  </div>

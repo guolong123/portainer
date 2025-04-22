@@ -31,8 +31,8 @@ build-client: init-dist ## Build the client
 build-server: init-dist ## Build the server binary
 	./build/build_binary.sh "$(PLATFORM)" "$(ARCH)"
 
-build-image: build-all ## Build the Portainer image locally
-	docker buildx build --load -t portainerci/portainer-ce:$(TAG) -f build/linux/Dockerfile .
+build-image: ## Build the Portainer image with all dependencies in container
+	docker buildx build --load -t portainerci/portainer-ce:$(TAG) -f build/linux/Dockerfile.build .
 
 build-storybook: ## Build and serve the storybook files
 	yarn storybook:build

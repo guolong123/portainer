@@ -1,0 +1,36 @@
+# Go backend builder
+FROM golang:1.23-alpine AS go-builder
+USER root
+ENV GOPROXY=https://goproxy.cn,direct
+RUN apk add --no-cache git make gcc musl-dev bash
+WORKDIR /portainer
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN ./build/build_binary.sh "linux" "amd64"
+
+# Node.js frontend builder
+FROM node:18-alpine AS node-builder
+USER root
+RUN npm config set registry https://registry.npmmirror.com && \
+    yarn config set registry https://registry.npmmirror.com
+RUN apk add --no-cache git python3 make g++ bash
+WORKDIR /portainer
+COPY package.json yarn.lock ./
+RUN yarn
+COPY . .
+RUN yarn build --config webpack/webpack.production.js
+
+# Final image
+FROM ubuntu:22.04
+COPY --from=go-builder /portainer/dist/portainer /
+COPY --from=go-builder /portainer/dist/docker /
+COPY --from=go-builder /portainer/dist/kubectl /
+COPY --from=node-builder /portainer/dist/public /public/
+COPY --from=go-builder /portainer/dist/mustache-templates /mustache-templates/
+COPY --from=go-builder /portainer/build/docker-extension /
+
+VOLUME /data
+WORKDIR /
+EXPOSE 9000 9443 8000
+ENTRYPOINT ["/portainer"]

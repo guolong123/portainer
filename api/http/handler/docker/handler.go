@@ -26,6 +26,7 @@ type Handler struct {
 	dockerClientFactory  *dockerclient.ClientFactory
 	authorizationService *authorization.Service
 	containerService     *docker.ContainerService
+	nodeAddHandler       func(w http.ResponseWriter, r *http.Request)
 }
 
 // NewHandler creates a handler to process non-proxied requests to docker APIs directly.
@@ -37,6 +38,7 @@ func NewHandler(bouncer security.BouncerService, authorizationService *authoriza
 		dataStore:            dataStore,
 		dockerClientFactory:  dockerClientFactory,
 		containerService:     containerService,
+		nodeAddHandler:       docker.NodeAdd,
 	}
 
 	// endpoints
@@ -51,7 +53,24 @@ func NewHandler(bouncer security.BouncerService, authorizationService *authoriza
 
 	imagesHandler := images.NewHandler("/docker/{id}/images", bouncer, dockerClientFactory)
 	endpointRouter.PathPrefix("/images").Handler(imagesHandler)
+
+	// Corrected path: removed the redundant /docker/{id} prefix
+	endpointRouter.Handle("/nodes/add", httperror.LoggerHandler(h.nodeAdd)).Methods(http.MethodPost)
 	return h
+}
+
+func (handler *Handler) nodeAdd(w http.ResponseWriter, r *http.Request) *httperror.HandlerError {
+	endpoint, err := middlewares.FetchEndpoint(r)
+	if err != nil {
+		return httperror.BadRequest("Unable to find an environment on request context", err)
+	}
+
+	if !endpointutils.IsDockerEndpoint(endpoint) {
+		return httperror.BadRequest("Environment is not a docker environment", errors.New("environment is not a docker environment"))
+	}
+
+	handler.nodeAddHandler(w, r)
+	return nil
 }
 
 func dockerOnlyMiddleware(next http.Handler) http.Handler {

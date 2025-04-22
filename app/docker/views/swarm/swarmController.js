@@ -1,12 +1,14 @@
 angular.module('portainer.docker').controller('SwarmController', [
   '$q',
   '$scope',
+  '$uibModal',
+  '$timeout',
   'SystemService',
   'NodeService',
   'Notifications',
   'StateManager',
   'Authentication',
-  function ($q, $scope, SystemService, NodeService, Notifications, StateManager, Authentication) {
+  function ($q, $scope, $uibModal, $timeout, SystemService, NodeService, Notifications, StateManager, Authentication) {
     $scope.info = {};
     $scope.docker = {};
     $scope.swarm = {};
@@ -104,5 +106,64 @@ angular.module('portainer.docker').controller('SwarmController', [
     }
 
     initView();
+
+    $scope.showAddButton = $scope.isAdmin && $scope.applicationState.endpoint.mode.provider === 'DOCKER_SWARM_MODE';
+    // $scope.showAddButton = true;
+
+    $scope.addNode = function() {
+      var modalInstance = $uibModal.open({
+        templateUrl: '../../components/swarm-node-add-form/swarm-node-add-form.html',
+        controller: ['$scope', '$uibModalInstance', '$timeout', 'NodeService', 'Notifications', function($scope, $uibModalInstance, $timeout, NodeService, Notifications) {
+          $scope.node = {
+            node_ip: '',
+            node_user: 'root',
+            node_password: '',
+            node_port: 22,
+            node_role: 'worker',
+            stack_name: 'default'
+          };
+          $scope.formValues = {
+            NodeRole: 'worker'
+          };
+          $scope.loading = false;
+          $scope.add = function() {
+            $scope.loading = true;
+            Notifications.success('Adding node', 'This operation may take several minutes, please wait...');
+            
+            var payload = {
+              node_ip: $scope.node.node_ip,
+              node_user: $scope.node.node_user,
+              node_password: $scope.node.node_password,
+              node_port: $scope.node.node_port,
+              node_role: $scope.formValues.NodeRole,
+              stack_name: $scope.node.stack_name
+            };
+            
+            // Set timeout to 300 seconds (5 minutes)
+            var timeoutPromise = $timeout(function() {
+              Notifications.error('Timeout', 'Node addition timed out after 5 minutes');
+              $scope.loading = false;
+            }, 300000);
+
+            NodeService.addNode(payload)
+              .then(function success() {
+                $timeout.cancel(timeoutPromise);
+                Notifications.success('Node successfully added');
+                $uibModalInstance.close();
+                $scope.loading = false;
+                getNodes();
+              })
+              .catch(function error(err) {
+                $timeout.cancel(timeoutPromise);
+                Notifications.error('Failure', err, 'Unable to add node');
+                $scope.loading = false;
+              });
+          };
+          $scope.cancel = function() {
+            $uibModalInstance.dismiss('cancel');
+          };
+        }]
+      });
+    };
   },
 ]);

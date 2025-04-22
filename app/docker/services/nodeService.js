@@ -7,13 +7,18 @@ import { NodeViewModel } from '../models/node';
 angular.module('portainer.docker').factory('NodeService', NodeServiceFactory);
 
 /* @ngInject */
-function NodeServiceFactory(AngularToReact) {
+function NodeServiceFactory(AngularToReact, $http) { // Inject $http
   const { useAxios, injectEnvironmentId } = AngularToReact;
 
   return {
     nodes: useAxios(injectEnvironmentId(nodesAngularJS)), // macvlan form + services list + service create + service edit + swarm visualizer + stack edit
     node: useAxios(injectEnvironmentId(nodeAngularJS)), // node browser + node details
     updateNode: useAxios(injectEnvironmentId(updateNodeAngularJS)), // swarm node details panel
+    addNode: useAxios(injectEnvironmentId(addNodeAngularJS)), // add new swarm node
+    addNodeRedirect: () => {
+      // 跳转到新增节点表单页面的逻辑
+      window.location.href = `#/docker/swarm/nodes/add`;
+    }
   };
 
   /**
@@ -39,5 +44,22 @@ function NodeServiceFactory(AngularToReact) {
    */
   async function updateNodeAngularJS(environmentId, nodeConfig) {
     return updateNode(environmentId, nodeConfig.Id, nodeConfig, nodeConfig.Version);
+  }
+
+  /**
+   * @param {EnvironmentId} environmentId
+   * @param {Object} nodeData - { node_ip, node_user, node_password, node_port, node_role }
+   */
+  async function addNodeAngularJS(environmentId, nodeData) {
+    try {
+      const response = await $http.post(`/api/docker/${environmentId}/nodes/add`, nodeData, {
+        timeout: 300000 // 5 minutes timeout
+      });
+      return response.data;
+    } catch (error) {
+      // Rethrow or handle error appropriately
+      console.error('Error adding node:', error);
+      throw error;
+    }
   }
 }
